@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dutch Solar Park Database</title>
+<link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <h1>Dutch Solar Park Database</h1>
+    <p>206 solar parks (&gt;4 ha), 2016–2025 — capacity, land use &amp; thermal impact</p>
+  </div>
+  <button id="filterToggle" class="icon-btn" aria-label="Toggle filters">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/><circle cx="9" cy="18" r="1.5" fill="currentColor"/></svg>
+  </button>
+</header>
+
+<div id="map"></div>
+
+<aside id="panel" class="panel">
+  <div class="panel-section">
+    <h2>Filters</h2>
+
+    <label>Province</label>
+    <select id="provinceFilter">
+      <option value="">All provinces</option>
+    </select>
+
+    <label>Min capacity (MWp): <span id="capacityVal">0</span></label>
+    <input type="range" id="capacityFilter" min="0" max="150" step="1" value="0" />
+
+    <label>Type</label>
+    <select id="waterFilter">
+      <option value="">All</option>
+      <option value="Ja">Floating</option>
+      <option value="Nee">Ground-mounted</option>
+    </select>
+
+    <div id="resultCount" class="result-count">206 parks shown</div>
+  </div>
+
+  <div class="panel-section about">
+    <h2>About</h2>
+    <p>This map presents a geodatabase of Dutch solar parks larger than 4 hectares, built as part of an MSc thesis researching land-use change and local temperature effects of solar parks.</p>
+    <p><a href="thesis.pdf" target="_blank" rel="noopener">Read the full thesis (PDF)</a></p>
+    <p><a href="https://github.com/" target="_blank" rel="noopener">View on GitHub</a> · <a href="willemijnkoopman@gmail.com">Contact</a></p>
+  </div>
+</aside>
+
+<div id="popup-card" class="popup-card hidden">
+  <button id="popupClose" class="popup-close" aria-label="Close">&times;</button>
+  <div id="popupContent"></div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
