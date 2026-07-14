@@ -1,7 +1,7 @@
 // ---------- Map setup ----------
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json', // clean, minimal, Apple-ish basemap
+  style: 'https://basemaps.cartocdn.com/gl/positron-nolabels-gl-style/style.json', // clean, minimal, Apple-ish basemap
   center: [5.5, 52.2],
   zoom: 7,
   attributionControl: true,
@@ -16,17 +16,35 @@ map.on('load', async () => {
   const data = await res.json();
   allFeatures = data.features;
 
+// LGN land use WMS layer (behind everything)
+  map.addSource('lgn', {
+    type: 'raster',
+    tiles: [
+      'https://service.pdok.nl/publieksdiensten/lgn/wms/v1_0?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=lgn2020&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}'
+    ],
+    tileSize: 256,
+    attribution: '© PDOK LGN',
+  });
+  map.addLayer({
+    id: 'lgn-layer',
+    type: 'raster',
+    source: 'lgn',
+    paint: { 'raster-opacity': 0.55 },
+  });
+
+  // Parks source
   map.addSource('parks', {
     type: 'geojson',
     data: data,
     generateId: true,
   });
 
-  // Polygon fill
+  // Polygon fill (visible when zoomed in)
   map.addLayer({
     id: 'parks-fill',
     type: 'fill',
     source: 'parks',
+    minzoom: 11,
     paint: {
       'fill-color': [
         'interpolate', ['linear'], ['coalesce', ['get', 'dT'], 0],
@@ -38,15 +56,54 @@ map.on('load', async () => {
     }
   });
 
-  // Polygon outline
+  // Polygon outline (visible when zoomed in)
   map.addLayer({
     id: 'parks-outline',
     type: 'line',
     source: 'parks',
+    minzoom: 11,
     paint: {
       'line-color': '#ffffff',
       'line-width': 1.5,
     }
+  });
+
+  // Circle markers (visible when zoomed out)
+  map.addLayer({
+    id: 'parks-circle',
+    type: 'circle',
+    source: 'parks',
+    maxzoom: 11,
+    paint: {
+      'circle-radius': [
+        'interpolate', ['linear'], ['zoom'],
+        6, 4,
+        11, 10
+      ],
+      'circle-color': [
+        'interpolate', ['linear'], ['coalesce', ['get', 'dT'], 0],
+        -3, '#1a8f4f',
+        0, '#f5d76e',
+        3, '#d6452f'
+      ],
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 1,
+      'circle-opacity': 0.9,
+    }
+  });
+
+  // Labels layer on top (Positron with labels only)
+  map.addSource('carto-labels', {
+    type: 'raster',
+    tiles: ['https://basemaps.cartocdn.com/rastertiles/positron_only_labels/{z}/{x}/{y}.png'],
+    tileSize: 256,
+    attribution: '© CARTO',
+  });
+  map.addLayer({
+    id: 'carto-labels-layer',
+    type: 'raster',
+    source: 'carto-labels',
+    paint: { 'raster-opacity': 1 },
   });
 
   // Fit map to all parks
@@ -61,14 +118,14 @@ map.on('load', async () => {
   bindFilterEvents();
 
   // Click to show details
-  map.on('click', 'parks-fill', (e) => {
-    if (!e.features.length) return;
-    showPopup(e.features[0].properties);
+['parks-fill', 'parks-circle'].forEach(layer => {
+    map.on('click', layer, (e) => {
+      if (!e.features.length) return;
+      showPopup(e.features[0].properties);
+    });
+    map.on('mouseenter', layer, () => map.getCanvas().style.cursor = 'pointer');
+    map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
   });
-
-  map.on('mouseenter', 'parks-fill', () => map.getCanvas().style.cursor = 'pointer');
-  map.on('mouseleave', 'parks-fill', () => map.getCanvas().style.cursor = '');
-});
 
 // ---------- Province dropdown ----------
 function populateProvinceFilter() {
@@ -112,6 +169,7 @@ function applyFilters() {
 
   map.setFilter('parks-fill', filters.length > 1 ? filters : null);
   map.setFilter('parks-outline', filters.length > 1 ? filters : null);
+  map.setFilter('parks-circle', filters.length > 1 ? filters : null);
 
   // Update count
   const count = allFeatures.filter(f => {
