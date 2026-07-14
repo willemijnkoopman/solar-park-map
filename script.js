@@ -127,6 +127,8 @@ map.on('load', async () => {
     map.on('mouseleave', layer, () => map.getCanvas().style.cursor = '');
   });
 
+});
+
 // ---------- Province dropdown ----------
 function populateProvinceFilter() {
   const provinces = [...new Set(allFeatures.map(f => f.properties.province).filter(Boolean))].sort();
